@@ -5,6 +5,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <string>
+#include "opencv2/imgcodecs/legacy/constants_c.h"
 
 cv::Mat imageRGBA;
 cv::Mat imageGrey;
@@ -33,7 +34,7 @@ void preProcess(uchar4 **inputImage, unsigned char **greyImage,
     exit(1);
   }
 
-  cv::cvtColor(image, imageRGBA, CV_BGR2RGBA);
+  cv::cvtColor(image, imageRGBA, cv::COLOR_BGR2RGBA);
 
   // allocate memory for the output
   imageGrey.create(image.rows, image.cols, CV_8UC1);

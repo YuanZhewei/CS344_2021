@@ -44,7 +44,17 @@ __global__ void rgba_to_greyscale(const uchar4 *const rgbaImage,
   // The output (greyImage) at each pixel should be the result of
   // applying the formula: output = .299f * R + .587f * G + .114f * B;
   // Note: We will be ignoring the alpha channel for this conversion
+  int stride = gridDim.x * blockDim.x;
+  int n = numRows * numCols;
 
+  int index = threadIdx.x + blockIdx.x * blockDim.x;
+
+  for (int i = index; i < n; i += stride) {
+    float r = .299f * rgbaImage[i].x;
+    float g = .587f * rgbaImage[i].y;
+    float b = .114f * rgbaImage[i].z;
+    greyImage[i] = r + g + b;
+  }
   // First create a mapping from the 2D block and grid locations
   // to an absolute 2D location in the image, then use that to
   // calculate a 1D offset
@@ -56,11 +66,15 @@ void your_rgba_to_greyscale(const uchar4 *const h_rgbaImage,
                             size_t numCols) {
   // You must fill in the correct sizes for the blockSize and gridSize
   // currently only one block with one thread is being launched
-  const dim3 blockSize(1, 1, 1); // TODO
-  const dim3 gridSize(1, 1, 1);  // TODO
+  // const dim3 blockSize(1, 1, 1); // TODO
+  // const dim3 gridSize(1, 1, 1);  // TODO
+  int n = numRows * numCols;
+  int blockSize = 128;
+  int gridSize = (n + blockSize - 1) / blockSize;
   rgba_to_greyscale<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows,
                                              numCols);
 
   cudaDeviceSynchronize();
   checkCudaErrors(cudaGetLastError());
 }
+
