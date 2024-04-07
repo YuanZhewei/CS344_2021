@@ -69,12 +69,19 @@ void your_rgba_to_greyscale(const uchar4 *const h_rgbaImage,
   // const dim3 blockSize(1, 1, 1); // TODO
   // const dim3 gridSize(1, 1, 1);  // TODO
   int n = numRows * numCols;
-  int blockSize = 128;
-  int gridSize = (n + blockSize - 1) / blockSize;
+  // int blockSize = 128;
+  // int gridSize = (n + blockSize - 1) / blockSize;
+  int blockSize; // The launch configurator returned block size
+  int minGridSize; // The minimum grid size needed to achieve the maximum
+                   // occupancy for a full device launch
+  int gridSize; // The actual grid size needed, based on input size
+  cudaOccupancyMaxPotentialBlockSize(
+      &minGridSize, &blockSize, rgba_to_greyscale, 0, n);
+  gridSize = (n + blockSize - 1) / blockSize;
+  // printf("blockSize %d", blockSize);
   rgba_to_greyscale<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows,
                                              numCols);
 
   cudaDeviceSynchronize();
   checkCudaErrors(cudaGetLastError());
 }
-
