@@ -68,6 +68,7 @@ __global__ void rgba_to_greyscale(const uchar4 *const rgbaImage,
       uchar4 rgba = rgbaImage[index];
       float channelSum = .299f * rgba.x + .587f * rgba.y + .114f * rgba.z;
       greyImage[index] = (unsigned char)channelSum;
+      index++;
     }
   }
   // First create a mapping from the 2D block and grid locations
