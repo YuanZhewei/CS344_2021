@@ -48,7 +48,7 @@ __global__ void rgba_to_greyscale(const uchar4 *const rgbaImage,
   int idx = threadIdx.x + blockIdx.x * blockDim.x;
   int index = idx * 4;
   int n = numCols * numRows;
-  if (index < n) {
+  if (index + 4 < n) {
     uchar4 rgba[4];
     reinterpret_cast<int4*>(&rgba)[0] = reinterpret_cast<const int4* const>(rgbaImage)[idx];
     uchar4 rgba0 = rgbaImage[index];
