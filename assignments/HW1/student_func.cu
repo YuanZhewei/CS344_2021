@@ -44,16 +44,31 @@ __global__ void rgba_to_greyscale(const uchar4 *const rgbaImage,
   // The output (greyImage) at each pixel should be the result of
   // applying the formula: output = .299f * R + .587f * G + .114f * B;
   // Note: We will be ignoring the alpha channel for this conversion
-  int stride = gridDim.x * blockDim.x;
-  int n = numRows * numCols;
-
-  int index = threadIdx.x + blockIdx.x * blockDim.x;
-
-  for (int i = index; i < n; i += stride) {
-    float r = .299f * rgbaImage[i].x;
-    float g = .587f * rgbaImage[i].y;
-    float b = .114f * rgbaImage[i].z;
-    greyImage[i] = r + g + b;
+  // int stride = gridDim.x * blockDim.x;
+  int idx = threadIdx.x + blockIdx.x * blockDim.x;
+  int index = idx * 4;
+  int n = numCols * numRows;
+  if (index < n) {
+    uchar4 rgba[4];
+    reinterpret_cast<int4*>(&rgba)[0] = reinterpret_cast<const int4* const>(rgbaImage)[idx];
+    uchar4 rgba0 = rgbaImage[index];
+    uchar4 rgba1 = rgbaImage[index+1];
+    uchar4 rgba2 = rgbaImage[index+2];
+    uchar4 rgba3 = rgbaImage[index+3];
+    float channelSum0 = .299f * rgba0.x + .587f * rgba0.y + .114f * rgba0.z;
+    float channelSum1 = .299f * rgba1.x + .587f * rgba1.y + .114f * rgba1.z;
+    float channelSum2 = .299f * rgba2.x + .587f * rgba2.y + .114f * rgba2.z;
+    float channelSum3 = .299f * rgba3.x + .587f * rgba3.y + .114f * rgba3.z;
+    greyImage[index] = (unsigned char)channelSum0;
+    greyImage[index+1] = (unsigned char)channelSum1;
+    greyImage[index+2] = (unsigned char)channelSum2;
+    greyImage[index+3] = (unsigned char)channelSum3;
+  } else {
+    while (index < n) {
+      uchar4 rgba = rgbaImage[index];
+      float channelSum = .299f * rgba.x + .587f * rgba.y + .114f * rgba.z;
+      greyImage[index] = (unsigned char)channelSum;
+    }
   }
   // First create a mapping from the 2D block and grid locations
   // to an absolute 2D location in the image, then use that to
@@ -71,13 +86,13 @@ void your_rgba_to_greyscale(const uchar4 *const h_rgbaImage,
   int n = numRows * numCols;
   // int blockSize = 128;
   // int gridSize = (n + blockSize - 1) / blockSize;
-  int blockSize; // The launch configurator returned block size
+  int blockSize = 256; // The launch configurator returned block size
   int minGridSize; // The minimum grid size needed to achieve the maximum
                    // occupancy for a full device launch
   int gridSize; // The actual grid size needed, based on input size
-  cudaOccupancyMaxPotentialBlockSize(
-      &minGridSize, &blockSize, rgba_to_greyscale, 0, n);
-  gridSize = (n + blockSize - 1) / blockSize;
+  // cudaOccupancyMaxPotentialBlockSize(
+  //     &minGridSize, &blockSize, rgba_to_greyscale, 0, n);
+  gridSize = (n/4 + blockSize - 1) / blockSize;
   // printf("blockSize %d", blockSize);
   rgba_to_greyscale<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows,
                                              numCols);
